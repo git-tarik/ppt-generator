@@ -23,15 +23,18 @@ async def generate_ppt(
         raise HTTPException(status_code=400, detail="API Key is required")
 
     try:
-        # Phase 2: Read file content and analyze (Verification Step)
+        # Read and analyze template
         template_bytes = await file.read()
         
-        # We analyze just to log the structure (as per requirement to keep Phase 2 behavior)
-        # and to ensure it's a valid PPT before proceeding.
-        analyze_presentation(template_bytes) 
+        # Analyze template to extract layouts, colors, fonts, and images
+        logger.info("Analyzing template...")
+        template_metadata = analyze_presentation(template_bytes)
         
-        # Phase 3: Generate Slide Plan (LLM)
-        # Fail fast if this step fails (e.g., bad API key), as we no longer have a dummy fallback.
+        if template_metadata.get("error"):
+            raise HTTPException(status_code=400, detail="Invalid PowerPoint template")
+        
+        # Generate Slide Plan using LLM
+        logger.info("Generating slide plan with LLM...")
         try:
             plan = await generate_slide_plan(text_input, guidance, api_key)
         except Exception as e:
@@ -41,9 +44,11 @@ async def generate_ppt(
         if not plan:
             raise HTTPException(status_code=500, detail="LLM returned empty plan")
 
-        # Phase 4: Generate Real PPT
+        logger.info(f"Plan generated: {plan.get('meta', {}).get('slide_count', 0)} slides")
+
+        # Generate PowerPoint with template metadata (images, colors, fonts)
         try:
-            pptx_io = generate_presentation(template_bytes, plan)
+            pptx_io = generate_presentation(template_bytes, plan, template_metadata)
         except Exception as e:
             logger.error(f"PPT Generation Failed: {e}")
             raise HTTPException(status_code=500, detail=f"Failed to generate PPT: {str(e)}")

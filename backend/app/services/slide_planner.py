@@ -2,6 +2,7 @@ import json
 import logging
 from app.services.llm.openai import OpenAIClient
 from app.services.llm.gemini import GeminiClient
+from app.services.llm.anthropic import AnthropicClient
 from app.services.prompt_builder import build_planning_prompt
 from app.services.validators import SlidePlan
 
@@ -16,12 +17,18 @@ logger.propagate = False
 
 def get_llm_client(api_key: str):
     """
-    Simple factory to choose the correct LLM provider.
+    Factory to choose the correct LLM provider based on API key format.
+    Supports: OpenAI, Anthropic Claude, Google Gemini
     """
-    if api_key.startswith("sk-"):
+    if api_key.startswith("sk-ant-"):
+        logger.info("Detected Anthropic API key")
+        return AnthropicClient()
+    elif api_key.startswith("sk-"):
+        logger.info("Detected OpenAI API key")
         return OpenAIClient()
     else:
         # Assuming Google API key (starts with AIza usually, or just default to Gemini for non-sk keys)
+        logger.info("Detected Gemini API key")
         return GeminiClient()
 
 async def generate_slide_plan(text_input: str, guidance: str | None, api_key: str) -> dict:

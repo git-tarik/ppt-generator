@@ -16,7 +16,7 @@ Transform the input text into a slide deck plan.
 - Break down the content into logical slides.
 - Create a title for each slide.
 - Extract key points as concise bullets (max 15 words per bullet).
-- Add speaker notes if helpful.
+- Generate helpful speaker notes for each slide (2-3 sentences explaining the key message).
 
 CONSTRAINTS:
 - Use JSON format ONLY.
@@ -31,7 +31,7 @@ SCHEMA:
     {{
       "title": "string",
       "bullets": ["string", "string"],
-      "notes": "string (optional)"
+      "notes": "string (speaker notes for this slide)"
     }}
   ],
   "meta": {{

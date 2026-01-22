@@ -19,7 +19,18 @@ const UploadForm = () => {
 
     const handleFileChange = (e) => {
         if (e.target.files) {
-            setFile(e.target.files[0]);
+            const selectedFile = e.target.files[0];
+
+            // File size validation (10MB limit)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (selectedFile.size > maxSize) {
+                setError("File size exceeds 10MB limit. Please upload a smaller template.");
+                setFile(null);
+                return;
+            }
+
+            setFile(selectedFile);
+            setError(null); // Clear any previous errors
         }
     };
 
@@ -47,7 +58,13 @@ const UploadForm = () => {
         setError(null);
 
         if (!file) {
-            setError("Please upload a file");
+            setError("Please upload a PowerPoint template file");
+            setLoading(false);
+            return;
+        }
+
+        if (!textInput || textInput.trim().length < 20) {
+            setError("Please enter at least 20 characters of content");
             setLoading(false);
             return;
         }
@@ -60,8 +77,9 @@ const UploadForm = () => {
 
         try {
             // Simulate progress stages
-            setTimeout(() => setLoadingText("Planning slides..."), 2000);
-            setTimeout(() => setLoadingText("Generating presentation..."), 5000);
+            setTimeout(() => setLoadingText("Extracting template style..."), 1500);
+            setTimeout(() => setLoadingText("Planning slides with AI..."), 3500);
+            setTimeout(() => setLoadingText("Generating presentation..."), 6000);
 
             const blob = await generatePPT(formData);
 
@@ -73,13 +91,26 @@ const UploadForm = () => {
             a.click();
             a.remove();
 
-            setMessage("Presentation generated and downloaded!");
+            setMessage("✅ Presentation generated and downloaded successfully!");
         } catch (err) {
-            // Friendly error messages
-            let safeError = "Something went wrong. Please check your API key and try again.";
-            if (err.message.includes("400")) safeError = "Invalid input. Please check your text and API key.";
-            if (err.message.includes("401")) safeError = "Authentication failed. Invalid API Key.";
-            if (err.message.includes("500")) safeError = "Server hiccup. Please try again with shorter text.";
+            // Enhanced error messages
+            let safeError = "Something went wrong. Please check your inputs and try again.";
+
+            const errMsg = err.message || "";
+
+            if (errMsg.includes("400") || errMsg.includes("Bad Request")) {
+                safeError = "Invalid input. Please check your API key and template file.";
+            } else if (errMsg.includes("401") || errMsg.includes("Unauthorized")) {
+                safeError = "Authentication failed. Your API key is invalid or expired.";
+            } else if (errMsg.includes("403") || errMsg.includes("Forbidden")) {
+                safeError = "Access denied. Please check your API key permissions.";
+            } else if (errMsg.includes("500") || errMsg.includes("Server")) {
+                safeError = "Server error. Please try again with shorter text or a simpler template.";
+            } else if (errMsg.includes("timeout") || errMsg.includes("Timeout")) {
+                safeError = "Request timed out. The AI service might be slow. Please try again.";
+            } else if (errMsg.includes("network") || errMsg.includes("Network")) {
+                safeError = "Network error. Please check your internet connection.";
+            }
 
             setError(safeError);
         } finally {
@@ -132,14 +163,14 @@ const UploadForm = () => {
                 </div>
 
                 <div className="form-group">
-                    <label htmlFor="apiKey">API Key (OpenAI or Gemini):</label>
+                    <label htmlFor="apiKey">API Key (OpenAI, Anthropic, or Gemini):</label>
                     <input
                         type="password"
                         id="apiKey"
                         value={apiKey}
                         onChange={(e) => setApiKey(e.target.value)}
                         required
-                        placeholder="sk-... or AIza..."
+                        placeholder="sk-... or sk-ant-... or AIza..."
                     />
                 </div>
 
