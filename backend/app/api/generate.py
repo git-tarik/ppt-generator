@@ -3,6 +3,7 @@ from fastapi.responses import StreamingResponse
 from typing import Optional
 from app.services.dummy_generator import generate_dummy_pptx
 from app.services.template_parser import analyze_presentation
+from app.services.slide_planner import generate_slide_plan
 
 router = APIRouter()
 
@@ -17,12 +18,13 @@ async def generate_ppt(
         raise HTTPException(status_code=400, detail="API Key is required")
 
     try:
-        # Phase 2: Read file content and analyze
         contents = await file.read()
         analyze_presentation(contents)
         
-        # Reset file pointer if we were to use it again (though dummy generator doesn't use it)
-        # await file.seek(0) 
+        try:
+            plan = await generate_slide_plan(text_input, guidance, api_key)
+        except Exception as e:
+            print(f"LLM Planning Failed (Non-blocking): {e}")
 
         pptx_io = generate_dummy_pptx(text_input, guidance)
         
