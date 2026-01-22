@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import StreamingResponse
 from typing import Optional
 from app.services.dummy_generator import generate_dummy_pptx
+from app.services.template_parser import analyze_presentation
 
 router = APIRouter()
 
@@ -16,6 +17,13 @@ async def generate_ppt(
         raise HTTPException(status_code=400, detail="API Key is required")
 
     try:
+        # Phase 2: Read file content and analyze
+        contents = await file.read()
+        analyze_presentation(contents)
+        
+        # Reset file pointer if we were to use it again (though dummy generator doesn't use it)
+        # await file.seek(0) 
+
         pptx_io = generate_dummy_pptx(text_input, guidance)
         
         return StreamingResponse(
