@@ -1,6 +1,7 @@
 import json
 import logging
 from app.services.llm.openai import OpenAIClient
+from app.services.llm.gemini import GeminiClient
 from app.services.prompt_builder import build_planning_prompt
 from app.services.validators import SlidePlan
 
@@ -13,8 +14,15 @@ if not logger.handlers:
     logger.addHandler(sh)
 logger.propagate = False
 
-# Instantiate client once (or dependency inject)
-llm_client = OpenAIClient()
+def get_llm_client(api_key: str):
+    """
+    Simple factory to choose the correct LLM provider.
+    """
+    if api_key.startswith("sk-"):
+        return OpenAIClient()
+    else:
+        # Assuming Google API key (starts with AIza usually, or just default to Gemini for non-sk keys)
+        return GeminiClient()
 
 async def generate_slide_plan(text_input: str, guidance: str | None, api_key: str) -> dict:
     prompt = build_planning_prompt(text_input, guidance)
@@ -25,7 +33,9 @@ async def generate_slide_plan(text_input: str, guidance: str | None, api_key: st
     for attempt in range(max_retries + 1):
         try:
             logger.info(f"Generating plan (Attempt {attempt + 1}/{max_retries + 1})...")
-            raw_response = await llm_client.generate(prompt, api_key)
+            
+            client = get_llm_client(api_key)
+            raw_response = await client.generate(prompt, api_key)
             
             cleaned_response = raw_response.strip()
             if cleaned_response.startswith("```json"):
