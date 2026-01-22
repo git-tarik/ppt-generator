@@ -6,8 +6,8 @@ function App() {
     return (
         <div className="App">
             <header className="App-header">
-                <h1>PPT Generator - Phase 1</h1>
-                <p>Dummy Mode: No real AI calls yet.</p>
+                <h1>AI PowerPoint Generator</h1>
+                <p>Turn bulk text into structured PowerPoint presentations.</p>
             </header>
             <main>
                 <UploadForm />
